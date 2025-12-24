@@ -26,7 +26,7 @@ To bridge the gap between code and biology, we guided students through a deep-di
 * **Interpretation:** This upregulation suggests a defensive differentiation mechanism in early-stage disease, which is often lost as the cancer becomes invasive and undifferentiated.
 
 ## 📂 Repository Contents
-* `workshopscript.R`: The complete, commented R code used for the live demonstration.
+* `workshopscript.txt`: The complete, commented R code used for the live demonstration.
 * `workshop_flyer.png`: Official event brochure.
 
 
