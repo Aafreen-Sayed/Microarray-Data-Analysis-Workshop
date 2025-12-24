@@ -1,0 +1,103 @@
+install.packages(c("ggplot2", "pheatmap", "openxlsx", "RColorBrewer", "BiocManager"))
+BiocManager::install(c("GEOquery", "edgeR", "EnhancedVolcano", "limma", "affy"))
+
+
+# Load required libraries ----
+library(affy)             # For Affymetrix CEL files (if needed)
+library(GEOquery)         # To download GEO data
+library(limma)            # For DEG analysis
+library(ggplot2)          # For visualizations
+library(pheatmap)         # For heatmaps
+library(openxlsx)         # For saving Excel files
+library(RColorBrewer)     # For colors
+library(EnhancedVolcano)  # For volcano plots
+
+# Set working directory ----
+output_dir <- "C:/Users/sayed/OneDrive/Desktop/microarray analysis/cervical cancer"
+dir.create(output_dir, showWarnings = FALSE)
+setwd(output_dir)
+
+# Step 1: Download GEO dataset ----
+gse <- getGEO("GSE138080", GSEMatrix = TRUE, AnnotGPL = TRUE)
+data <- gse[[1]]
+exprs_data <- exprs(data)
+
+# Step 2: Boxplot before normalization ----
+png("boxplot_before_normalization.png", width = 800, height = 600)
+boxplot(exprs_data, main = "Boxplot Before Normalization", col = "lightblue", las = 2)
+dev.off()
+
+# Step 3: Normalize the data ----
+eset_norm <- normalizeBetweenArrays(exprs_data, method = "quantile")
+# Now log2 transform
+eset <- log2(eset_norm + 1)  # +1 to avoid log(0)
+
+# Step 4: Boxplot after normalization ----
+png("boxplot_after_normalization.png", width = 800, height = 600)
+boxplot(eset, main = "Boxplot After Normalization", col = "lightgreen", las = 2)
+dev.off()
+
+# Step 5: Quality Control (PCA + Correlation Heatmap) ----
+pca <- prcomp(t(eset), scale. = TRUE)
+png("PCA_plot.png", width = 800, height = 600)
+plot(pca$x[,1:2], col = rainbow(ncol(eset)), pch = 16,
+     main = "PCA Plot", xlab = "PC1", ylab = "PC2")
+dev.off()
+
+
+# Step 6: Subset to 10 Normal + 10 CxSCC samples ----
+selected_samples <- c(
+  "GSM4098861", "GSM4098862", "GSM4098863", "GSM4098864", "GSM4098865",
+  "GSM4098866", "GSM4098867", "GSM4098868", "GSM4098869", "GSM4098870",
+  "GSM4098886", "GSM4098887", "GSM4098888", "GSM4098889", "GSM4098890",
+  "GSM4098891", "GSM4098892", "GSM4098893", "GSM4098894", "GSM4098895"
+)
+
+eset_sub <- eset[, selected_samples]
+group <- factor(c(rep("Normal", 10), rep("CxSCC", 10)))
+
+# Step 7: Identify Differentially Expressed Genes (DEGs) ----
+design <- model.matrix(~ group)
+fit <- lmFit(eset_sub, design)
+fit <- eBayes(fit)
+deg_results <- topTable(fit, coef = 2, number = Inf, adjust.method = "fdr")
+
+# Step 8: Annotation using GPL platform ----
+gpl <- getGEO("GPL4133", AnnotGPL = TRUE)
+gpl_table <- Table(gpl)
+
+# Clean annotation data
+annotation_df <- gpl_table[, c("ID", "Gene symbol", "Gene title")]
+colnames(annotation_df) <- c("ProbeID", "GENE_SYMBOL", "GENE_NAME")
+deg_results$ProbeID <- rownames(deg_results)
+
+# Merge DEGs with annotation
+deg_annotated <- merge(deg_results, annotation_df, by = "ProbeID", all.x = TRUE)
+
+# Step 9: Filter DEGs ----
+deg_filtered <- subset(deg_annotated, adj.P.Val < 0.05 & abs(logFC) > 1)
+deg_up <- subset(deg_filtered, logFC > 1)
+deg_down <- subset(deg_filtered, logFC < -1)
+
+# Step 10: Save DEGs to Excel ----
+write.xlsx(deg_annotated, "All_DEGs.xlsx", rowNames = FALSE)
+write.xlsx(deg_up, "Upregulated_Genes.xlsx", rowNames = FALSE)
+write.xlsx(deg_down, "Downregulated_Genes.xlsx", rowNames = FALSE)
+
+# Step 11: Volcano Plot ----
+deg_volcano <- deg_annotated[!is.na(deg_annotated$GENE_SYMBOL) & deg_annotated$GENE_SYMBOL != "", ]
+png("volcano_plot.png", width = 800, height = 600)
+EnhancedVolcano(deg_annotated,
+                lab = deg_annotated$GENE_SYMBOL,
+                x = 'logFC',
+                y = 'adj.P.Val',
+                pCutoff = 0.05,
+                FCcutoff = 1,
+                title = 'Volcano Plot of DEGs',
+                pointSize = 2,
+                labSize = 3)
+dev.off()
+
+
+# Summary ----
+cat("🎉 Analysis complete! All plots and Excel files saved in:", getwd(), "\n")
