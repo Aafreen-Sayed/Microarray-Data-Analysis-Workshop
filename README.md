@@ -1,11 +1,11 @@
 # Microarray Data Analysis Workshop: From Data to Discovery
 
 ## 🎓 Workshop Context
-**Role:** Technical Lead & Curriculum Developer
-**Instructor:** Dr. Sneha Dokhale
-**Venue:** B.K. Birla College, Kalyan
-**Date:** June 9-10, 2025
-**Audience:** Undergraduate & Postgraduate Biological Sciences Students
+**Role:** Technical Lead & Curriculum Developer <br>
+**Instructor:** Dr. Sneha Dokhale <br>
+**Venue:** B.K. Birla College, Kalyan <br>
+**Date:** June 9-10, 2025 <br>
+**Audience:** Undergraduate & Postgraduate Biological Sciences Students <br>
 
 ## 📌 Overview
 This repository contains the **computational workflow and R scripts** I developed for a 2-day hands-on training session on Microarray Data Analysis. While the theoretical concepts were delivered by the lead instructor, I was responsible for designing the technical pipeline, preparing the code, and troubleshooting the analysis for students.
